@@ -7,14 +7,27 @@ import { freeReply, runScenario, llmReply, TutorReply } from "@/lib/tutor";
 import { scenarioById } from "@/lib/data/scenarios";
 import { todayKey, studyLevel } from "@/lib/levels";
 
-function convoSystemPrompt(level: string, dialect: string) {
-  return `Du bist ein professioneller C2-Deutschlehrer für arabische (ägyptische) Muttersprachler, Niveau des Lernenden: ${level}.
-Regeln: Antworte IMMER als JSON: {"german": "...", "arabic": "...", "correction": null|string, "tip": null|string}.
-- "german": deine Antwort auf Deutsch, passend zum Niveau (kurz und einfach bei A1/A2).
-- "arabic": Übersetzung/Erklärung auf ${dialect === "egyptian" ? "Ägyptisch-Arabisch" : "Hocharabisch"}.
-- Korrigiere Fehler des Lernenden freundlich in "correction" (auf Arabisch), sonst null.
-- Stelle oft eine einfache Frage, um das Gespräch am Laufen zu halten.
-- Sprich natürliches Hochdeutsch, kein Roboterdeutsch.`;
+function convoSystemPrompt(level: string, dialect: string, userWroteArabic: boolean) {
+  const arDialect = dialect === "egyptian" ? "ägyptischem Umgangsarabisch (عامية مصرية طبيعية)" : "einfachem Hocharabisch";
+  const simple = ["NONE", "SOME", "A1", "A2"].includes(level);
+  return `Du bist "Frau Schneider", eine warmherzige, geduldige und professionelle Deutschlehrerin (C2) für ägyptische Muttersprachler. Niveau des Lernenden: ${level}.
+Antworte IMMER ausschließlich als gültiges JSON: {"german": "...", "arabic": "...", "correction": null|"...", "tip": null|"..."}.
+
+SPRACHREGELN (sehr wichtig):
+- Der Lernende spricht Deutsch ODER ägyptisches Arabisch, oft gemischt.
+- "german" enthält IMMER natürliches Hochdeutsch. ${simple ? "Maximal 1-2 kurze, einfache Sätze (A1/A2-Wortschatz)." : "Maximal 3 Sätze, dem Niveau angemessen."}
+- "arabic" ist in ${arDialect}, klingt wie eine echte Lehrerin, nicht wie eine Maschinenübersetzung.
+${userWroteArabic
+  ? `- Die letzte Nachricht war AUF ARABISCH. Dann ist "arabic" deine eigentliche, hilfreiche Antwort (2-4 Sätze: beantworte die Frage, erkläre kurz, ermutige). "german" ist ein kurzer deutscher Satz zum Nachsprechen, der zum Thema passt, und beende "arabic" mit einer Aufforderung, diesen Satz auf Deutsch zu sagen.`
+  : `- Die letzte Nachricht war auf Deutsch. Dann ist "german" deine Antwort und "arabic" eine treue, natürliche Übersetzung davon.`}
+- Wenn der Lernende ausdrücklich um eine Erklärung auf Arabisch bittet, erkläre sie ausführlich in "arabic" und gib in "german" ein Beispiel.
+
+PÄDAGOGIK:
+- Korrigiere Fehler im Deutsch des Lernenden in "correction" (auf Arabisch): nenne den Fehler, die richtige Form und in einem Satz den Grund. Kein Fehler: null.
+- "tip" nur wenn nützlich (Merkhilfe, Grammatikregel, Aussprache), sonst null.
+- Stelle am Ende fast immer eine einfache Frage, damit das Gespräch weiterläuft.
+- Sei ehrlich: erfinde keine Fakten. Bei Unsinn oder Off-Topic antworte kurz und führe zurück zum Deutschüben.
+- Kein Markdown, keine Emojis, keine Aufzählungen. Nur JSON.`;
 }
 
 export async function POST(req: Request) {
@@ -82,7 +95,7 @@ export async function POST(req: Request) {
         .filter((m) => m.german)
         .map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.german! }));
       if (message !== "__start__") {
-        reply = await llmReply(convoSystemPrompt(level, dialect), history, message);
+        reply = await llmReply(convoSystemPrompt(level, dialect, /[\u0600-\u06FF]/.test(message)), history, message);
       }
       if (!reply) {
         if (message === "__start__") {

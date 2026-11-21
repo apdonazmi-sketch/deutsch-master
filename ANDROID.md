@@ -2,7 +2,7 @@
 
 التطبيق = Next.js + Postgres + API (مش ملفات ثابتة)، فلازم يتنشر على سيرفر HTTPS، والـ APK بيفتح الموقع ده.
 
-## 1) النشر (إلزامي)
+## 1) النشر (إلزامي) — الجداول بتتعمل تلقائيًا عند التشغيل (npm run start:prod)
 - أنشئ قاعدة Postgres (Neon / Supabase / Railway) وخد الـ DATABASE_URL.
 - انشر المشروع على Railway أو Render، بالمتغيرات الموجودة في `.env.example`.
 - أنشئ الجداول مرة واحدة: عدّل الرابط في `drizzle.config.json` لقاعدتك ثم شغّل `npx drizzle-kit push`.

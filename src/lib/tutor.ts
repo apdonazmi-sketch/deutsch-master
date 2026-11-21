@@ -300,7 +300,7 @@ export async function llmReply(
 ): Promise<TutorReply | null> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) return null;
-  const base = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+  const base = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, "");
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
   try {
     const controller = new AbortController();
@@ -312,6 +312,7 @@ export async function llmReply(
       body: JSON.stringify({
         model,
         response_format: { type: "json_object" },
+        temperature: 0.7,
         messages: [
           { role: "system", content: systemPrompt },
           ...history.slice(-10),
@@ -320,11 +321,14 @@ export async function llmReply(
       }),
     });
     clearTimeout(t);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error("LLM error", res.status, (await res.text()).slice(0, 300));
+      return null;
+    }
     const data = await res.json();
     const content = data.choices?.[0]?.message?.content;
     if (!content) return null;
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(String(content).replace(/^```(?:json)?\s*|\s*```$/g, "").trim());
     if (!parsed.german) return null;
     return {
       german: String(parsed.german),

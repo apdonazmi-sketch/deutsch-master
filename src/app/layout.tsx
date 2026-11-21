@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import SwRegister from "@/components/SwRegister";
+import SoundFx from "@/components/SoundFx";
 
 export const metadata: Metadata = {
   title: "DEUTSCH MASTER AI — مدرّسك الألماني الشخصي",
@@ -28,7 +29,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           rel="stylesheet"
         />
       </head>
-      <body className="bg-ink text-cream antialiased"><SwRegister />{children}</body>
+      <body className="bg-ink text-cream antialiased"><SwRegister /><SoundFx />{children}</body>
     </html>
   );
 }

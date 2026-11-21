@@ -6,7 +6,7 @@ import {
   Send, Loader2, GraduationCap, MessageCircle, MapPin, Mic, Volume2, AlertCircle,
   CheckCircle2, RotateCcw, ChevronLeft, Languages, Gauge, Sparkles,
 } from "lucide-react";
-import { useSpeech, speakGerman, stopSpeaking, SpeakButton } from "@/components/voice";
+import { useSpeech, speakGerman, speakReply, stopSpeaking, SpeakButton, type VoiceMode } from "@/components/voice";
 import { PRONUNCIATION, PronunciationDrill } from "@/lib/data/extras";
 import { SCENARIOS } from "@/lib/data/scenarios";
 
@@ -36,6 +36,7 @@ export default function TutorClient({
   const [inputLang, setInputLang] = useState<"de-DE" | "ar-EG">("de-DE");
   const [loading, setLoading] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
+  const [voiceMode, setVoiceMode] = useState<VoiceMode>("both");
   const [showArabic, setShowArabic] = useState(true);
   const [rate, setRate] = useState(level === "NONE" || level === "SOME" || level === "A1" ? 0.75 : 0.95);
   const [userTurns, setUserTurns] = useState(0);
@@ -98,7 +99,7 @@ export default function TutorClient({
       setConversationId(data.conversationId);
       const r = data.reply;
       setMsgs((arr) => [...arr, { role: "assistant", german: r.german, arabic: r.arabic, correction: r.correction, tip: r.tip }]);
-      if (autoSpeak) speakGerman(r.german, rate);
+      if (autoSpeak) speakReply(r.german, r.arabic, rate, voiceMode);
       if (trimmed !== "__start__") {
         setUserTurns((n) => {
           const next = n + 1;
@@ -180,6 +181,18 @@ export default function TutorClient({
           <Volume2 size={14} className="text-gold" /> صوت تلقائي للردود
         </label>
         <label className="flex items-center gap-2">
+          <Languages size={14} className="text-gold" /> صوت المدرسة
+          <select
+            value={voiceMode}
+            onChange={(e) => setVoiceMode(e.target.value as VoiceMode)}
+            className="rounded-lg border border-line bg-coal px-2 py-1 text-xs text-cream"
+          >
+            <option value="both">ألماني + مصري</option>
+            <option value="de">ألماني بس</option>
+            <option value="ar">مصري بس</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2">
           <input type="checkbox" checked={showArabic} onChange={(e) => setShowArabic(e.target.checked)} className="accent-[#ffc53d]" />
           <Languages size={14} className="text-gold" /> الترجمة المصرية
         </label>
@@ -246,7 +259,12 @@ export default function TutorClient({
                     <div className="space-y-2">
                       <div className="rounded-2xl rounded-tr-md border border-line bg-white/[0.03] px-5 py-3.5">
                         <div className="german text-[15px] leading-7" dir="ltr">{m.german}</div>
-                        {showArabic && m.arabic && <div className="mt-2 border-t border-line/50 pt-2 text-[13px] leading-6 text-muted">{m.arabic}</div>}
+                        {showArabic && m.arabic && (
+                          <div className="mt-2 flex items-start gap-2 border-t border-line/50 pt-2">
+                            <div className="flex-1 text-[13px] leading-6 text-muted">{m.arabic}</div>
+                            <SpeakButton text={m.arabic} small lang="ar" />
+                          </div>
+                        )}
                         <div className="mt-2 flex justify-start">
                           <SpeakButton text={m.german} rate={rate} small />
                         </div>

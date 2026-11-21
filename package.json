@@ -6,7 +6,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "start:prod": "drizzle-kit push --force && next start -p ${PORT:-3000}"
   },
   "dependencies": {
     "dotenv": "17.3.1",
